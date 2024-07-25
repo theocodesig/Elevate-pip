@@ -14,9 +14,6 @@ client_secret = os.getenv("CLIENT_SECRET")
 
 logging.basicConfig(level=logging.INFO)
 
-
-
-
 class TokenCache:
     def __init__(self, ttl):
         self.token = None

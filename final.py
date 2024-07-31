@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import time
 import logging
 import mysql.connector
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
@@ -67,8 +68,7 @@ def process_file(input_file, output_file):
 input_file = 'input.txt'
 output_file = 'output.txt'
 
-
-def add_to_db(data_to_insert,type):
+def add_to_db(data_to_insert, type):
     try:
         conn = mysql.connector.connect(
             host = "***REMOVED_DATABASE_HOST***",
@@ -89,7 +89,7 @@ def add_to_db(data_to_insert,type):
         
         cursor.executemany(insert_query, data_to_insert)
         conn.commit()
-        print(cursor.rowcount, "record(s) inserted successfully for insert_data_2.")
+        print(cursor.rowcount, "record(s) inserted successfully.")
     except mysql.connector.Error as error:
         print(f"Error inserting data into MySQL table: {error}")
     finally:
@@ -112,13 +112,12 @@ def get_album_upc(album_id, token):
         logging.error("Failed to retrieve album details: %s", result.content)
         return None
 
-
 def search_spotify(token, query, search_type, limit=5):
     url = "https://api.spotify.com/v1/search"
     headers = {"Authorization": f"Bearer {token}"}
     query_params = {
         "q": query,
-        "type": search_type,
+        "type": search_type,    
         "limit": limit
     }
 
@@ -126,7 +125,6 @@ def search_spotify(token, query, search_type, limit=5):
     
     if result.status_code == 200:
         json_result = result.json()
-
         if search_type == "track":
             items = json_result.get("tracks", {}).get("items", [])
             for idx, item in enumerate(items, start=1):
@@ -136,11 +134,9 @@ def search_spotify(token, query, search_type, limit=5):
                 popularity = item["popularity"]
                 preview_url = item["preview_url"]
                 isrc = item.get("external_ids", {}).get("isrc") if item.get("external_ids") else None
-                track_id = item["id"]  # Accessing the ID of the track
-#term,ranks,name,isrc,id,artist,album,release_date,popularity
-                data_to_insert = [(query,idx,item['name'],isrc,track_id,artists,album_name,release_date,popularity)]
-                #add_to_track(data_to_insert)
-                add_to_db(data_to_insert,search_type)
+                track_id = item["id"]
+                data_to_insert = [(query, idx, item['name'], isrc, track_id, artists, album_name, release_date, popularity)]
+                add_to_db(data_to_insert, search_type)
                 print(f"Track {idx}: {item['name']}")
                 print(f"Artists: {artists}")
                 print(f"Album: {album_name}")
@@ -152,7 +148,6 @@ def search_spotify(token, query, search_type, limit=5):
                     print(f"ISRC: {isrc}")
                 print()
 
-
         elif search_type == "album":
             items = json_result.get("albums", {}).get("items", [])
             for idx, item in enumerate(items, start=1):
@@ -160,13 +155,10 @@ def search_spotify(token, query, search_type, limit=5):
                 release_date = item["release_date"]
                 total_tracks = item["total_tracks"]
                 upc = item.get("external_ids", {}).get("upc") if "external_ids" in item else None
-                album_id = item["id"]  # Accessing the ID of the album
+                album_id = item["id"]
                 upc = get_album_upc(album_id, token)
-                #term,ranks,name,upc,id,artist,Total_Tracks
-                data_to_insert = [(query,idx,item['name'],upc,album_id,artists,total_tracks)]
-                #add_to_album(data_to_insert)
-                add_to_db(data_to_insert,search_type)
-
+                data_to_insert = [(query, idx, item['name'], upc, album_id, artists, total_tracks)]
+                add_to_db(data_to_insert, search_type)
                 print(f"Album {idx}: {item['name']}")
                 print(f"Album ID: {album_id}")
                 print(f"Artists: {artists}")
@@ -176,9 +168,6 @@ def search_spotify(token, query, search_type, limit=5):
                     print(f"UPC: {upc}")
                 print()
 
-
-
-
         elif search_type == "artist":
             items = json_result.get("artists", {}).get("items", [])
             for idx, item in enumerate(items, start=1):
@@ -186,41 +175,40 @@ def search_spotify(token, query, search_type, limit=5):
                 followers = item["followers"]["total"] if "followers" in item else "Unknown"
                 popularity = item["popularity"] if "popularity" in item else "Unknown"
                 artist_id = item["id"]
-                #term,ranks,name,id,genres,followers,popularity
-                data_to_insert = [(query,idx,item['name'],artist_id,genres,followers,popularity)]
-                # add_to_artist(data_to_insert)
-                add_to_db(data_to_insert,search_type)
-
+                data_to_insert = [(query, idx, item['name'], artist_id, genres, followers, popularity)]
+                add_to_db(data_to_insert, search_type)
                 print(f"Artist {idx}: {item['name']}")
                 print(f"Genres: {genres}")
                 print(f"Artist Id: {artist_id}")
                 print(f"Followers: {followers}")
                 print(f"Popularity: {popularity}")
-                print()                 
-
-  
+                print()
 
     else:
         logging.error("Search failed: %s", result.content)
 
-# Example usage
 token_cache = TokenCache(ttl=3600)
 
 def refresh_token_periodically():
     while True:
         token_cache.get_token()
-        time.sleep(3600)  # Refresh every hour
+        time.sleep(3600)
 
 threading.Thread(target=refresh_token_periodically, daemon=True).start()
 
 lines_list = process_file(input_file, output_file)
 
+def search_all_types(token, term):
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        executor.submit(search_spotify, token, term, "track")
+        executor.submit(search_spotify, token, term, "artist")
+        executor.submit(search_spotify, token, term, "album")
+
 while True:
-    
     token = token_cache.get_token()
-    term = lines_list.pop()
-    search_spotify(token, term, search_type="track")
-    search_spotify(token, term, search_type="artist")
-    search_spotify(token, term, search_type="album")
-    
-    time.sleep(5)
+    if lines_list:
+        term = lines_list.pop()
+        search_all_types(token, term)
+        time.sleep(5)
+    else:
+        break

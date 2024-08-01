@@ -49,7 +49,7 @@ class TokenCache:
             logging.error("Failed to get token: %s", result.content)
             raise Exception("Failed to get token")
 
-def process_file(input_file, output_file):
+def url_ready_terms(input_file, output_file,type):
     try:
         with open(input_file, 'r') as fin, open(output_file, 'w') as fout:
             for line in fin:
@@ -58,12 +58,18 @@ def process_file(input_file, output_file):
 
         with open(output_file, 'r') as file:
             lines_list = [line.strip() for line in file.readlines()]
-        
-        return lines_list
+        with open(input_file, 'r') as file:
+            raw_list = [line.strip() for line in file.readlines()]
+
+        if type == "search":
+            return lines_list
+        elif type == "display":
+            return raw_list
     
     except FileNotFoundError as e:
         print(f"Error: {e.filename} not found.")
         return []
+
 
 input_file = 'input.txt'
 output_file = 'output.txt'
@@ -120,7 +126,7 @@ def search_spotify(token, query, search_type, limit=5):
         "type": search_type,    
         "limit": limit
     }
-
+    disp_name=raw_list.pop()
     result = get(url, headers=headers, params=query_params)
     
     if result.status_code == 200:
@@ -135,7 +141,7 @@ def search_spotify(token, query, search_type, limit=5):
                 preview_url = item["preview_url"]
                 isrc = item.get("external_ids", {}).get("isrc") if item.get("external_ids") else None
                 track_id = item["id"]
-                data_to_insert = [(query, idx, item['name'], isrc, track_id, artists, album_name, release_date, popularity)]
+                data_to_insert = [(disp_name, idx, item['name'], isrc, track_id, artists, album_name, release_date, popularity)]
                 add_to_db(data_to_insert, search_type)
                 print(f"Track {idx}: {item['name']}")
                 print(f"Artists: {artists}")
@@ -157,7 +163,7 @@ def search_spotify(token, query, search_type, limit=5):
                 upc = item.get("external_ids", {}).get("upc") if "external_ids" in item else None
                 album_id = item["id"]
                 upc = get_album_upc(album_id, token)
-                data_to_insert = [(query, idx, item['name'], upc, album_id, artists, total_tracks)]
+                data_to_insert = [(disp_name, idx, item['name'], upc, album_id, artists, total_tracks)]
                 add_to_db(data_to_insert, search_type)
                 print(f"Album {idx}: {item['name']}")
                 print(f"Album ID: {album_id}")
@@ -175,7 +181,7 @@ def search_spotify(token, query, search_type, limit=5):
                 followers = item["followers"]["total"] if "followers" in item else "Unknown"
                 popularity = item["popularity"] if "popularity" in item else "Unknown"
                 artist_id = item["id"]
-                data_to_insert = [(query, idx, item['name'], artist_id, genres, followers, popularity)]
+                data_to_insert = [(disp_name, idx, item['name'], artist_id, genres, followers, popularity)]
                 add_to_db(data_to_insert, search_type)
                 print(f"Artist {idx}: {item['name']}")
                 print(f"Genres: {genres}")
@@ -196,7 +202,8 @@ def refresh_token_periodically():
 
 threading.Thread(target=refresh_token_periodically, daemon=True).start()
 
-lines_list = process_file(input_file, output_file)
+lines_list = url_ready_terms(input_file, output_file,"search")
+raw_list = url_ready_terms(input_file, output_file,"display")
 
 def search_all_types(token, term):
     with ThreadPoolExecutor(max_workers=3) as executor:

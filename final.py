@@ -8,6 +8,7 @@ import time
 import logging
 import mysql.connector
 from concurrent.futures import ThreadPoolExecutor
+import csv
 
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
@@ -69,6 +70,34 @@ def url_ready_terms(input_file, output_file,type):
     except FileNotFoundError as e:
         print(f"Error: {e.filename} not found.")
         return []
+    
+def save_to_csv(data_to_insert, type):
+    filename = f"{type}_data.csv"
+    header = []
+
+    if type == 'album':
+        header = ['term', 'ranks', 'name', 'upc', 'id', 'artist', 'Total_Tracks']
+    elif type == 'artist':
+        header = ['term', 'ranks', 'name', 'id', 'genres', 'followers', 'popularity']
+    elif type == 'track':
+        header = ['term', 'ranks', 'name', 'isrc', 'id', 'artist', 'album', 'release_date', 'popularity']
+
+    # Check if the file exists and has data
+    file_exists = False
+    try:
+        with open(filename, 'r') as file:
+            reader = csv.reader(file)
+            if next(reader, None):
+                file_exists = True
+    except FileNotFoundError:
+        pass
+
+    with open(filename, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        if not file_exists:
+            writer.writerow(header)
+        writer.writerows(data_to_insert)
+
 
 
 input_file = 'input.txt'
@@ -143,6 +172,7 @@ def search_spotify(token, query, search_type, limit=5):
                 track_id = item["id"]
                 data_to_insert = [(disp_name, idx, item['name'], isrc, track_id, artists, album_name, release_date, popularity)]
                 add_to_db(data_to_insert, search_type)
+                save_to_csv(data_to_insert,search_type)
                 print(f"Track {idx}: {item['name']}")
                 print(f"Artists: {artists}")
                 print(f"Album: {album_name}")
@@ -165,6 +195,8 @@ def search_spotify(token, query, search_type, limit=5):
                 upc = get_album_upc(album_id, token)
                 data_to_insert = [(disp_name, idx, item['name'], upc, album_id, artists, total_tracks)]
                 add_to_db(data_to_insert, search_type)
+                save_to_csv(data_to_insert,search_type)
+
                 print(f"Album {idx}: {item['name']}")
                 print(f"Album ID: {album_id}")
                 print(f"Artists: {artists}")
@@ -183,6 +215,8 @@ def search_spotify(token, query, search_type, limit=5):
                 artist_id = item["id"]
                 data_to_insert = [(disp_name, idx, item['name'], artist_id, genres, followers, popularity)]
                 add_to_db(data_to_insert, search_type)
+                save_to_csv(data_to_insert,search_type)
+
                 print(f"Artist {idx}: {item['name']}")
                 print(f"Genres: {genres}")
                 print(f"Artist Id: {artist_id}")

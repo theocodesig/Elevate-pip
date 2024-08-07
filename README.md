@@ -70,18 +70,19 @@
         5 rows in set (0.00 sec)
 
 # similars.py example:
+
   artist_input.txt:Ryan Jon
 
-  spot database output: 
-      +------------------+------------------------+-------+--------------------------+------------------------+
-      | artist           | artist_id              | ranks | similar_a                | sim_ID                 |
-      +------------------+------------------------+-------+--------------------------+------------------------+
-      | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     1 | Hayes Carll              | 6UWifcscEdbjPgmbevBxZV |
-      | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     2 | Turnpike Troubadours     | 1YSA4byX5AL1zoTsSTlB03 |
-      | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     3 | Chris Knight             | 2XJzOLYV2mF5K2JfUhJEK0 |
-      | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     4 | Reckless Kelly           | 0jmPjksXqVrO92Urmx58vg |
-      | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     5 | Shane Smith & the Saints | 4pLxUMyDrijXynrUP59whJ |
-      +------------------+------------------------+-------+--------------------------+------------------------+
+    spot database output: 
+        +------------------+------------------------+-------+--------------------------+------------------------+
+        | artist           | artist_id              | ranks | similar_a                | sim_ID                 |
+        +------------------+------------------------+-------+--------------------------+------------------------+
+        | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     1 | Hayes Carll              | 6UWifcscEdbjPgmbevBxZV |
+        | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     2 | Turnpike Troubadours     | 1YSA4byX5AL1zoTsSTlB03 |
+        | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     3 | Chris Knight             | 2XJzOLYV2mF5K2JfUhJEK0 |
+        | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     4 | Reckless Kelly           | 0jmPjksXqVrO92Urmx58vg |
+        | Ryan Jon         | 31z9f9AyPawiq0qlBO1M3i |     5 | Shane Smith & the Saints | 4pLxUMyDrijXynrUP59whJ |
+        +------------------+------------------------+-------+--------------------------+------------------------+
 
 
 ![spot-chart2](https://github.com/user-attachments/assets/c574648c-1e0b-4e21-8ebf-9fca0b858342)

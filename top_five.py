@@ -1,9 +1,6 @@
-import os
-import base64
 import json
 import threading
-from requests import post, get
-from dotenv import load_dotenv
+from requests import get
 import time
 from Shlasses import TokenCache,add_to_db,text_file
 

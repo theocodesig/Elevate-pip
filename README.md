@@ -73,7 +73,8 @@
 
   artist_input.txt:Ryan Jon
 
-    spot database output: 
+    spot database output:
+        mysql> select * from similar_artist;
         +------------------+------------------------+-------+--------------------------+------------------------+
         | artist           | artist_id              | ranks | similar_a                | sim_ID                 |
         +------------------+------------------------+-------+--------------------------+------------------------+

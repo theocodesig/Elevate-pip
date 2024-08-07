@@ -2,7 +2,7 @@ import json
 import threading
 from requests import get
 import time
-from Shlasses import TokenCache,add_to_db,text_file
+from Helper_file import TokenCache,add_to_db,text_file
 
 
 def process_artist(token, artist, limit=5):

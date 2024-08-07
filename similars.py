@@ -56,15 +56,15 @@ def refresh_token_periodically():
 
 threading.Thread(target=refresh_token_periodically, daemon=True).start()
 
-input_file = 'artists_in.txt'
+input_file = 'artists_input.txt'
 output_file = 'artists_out.txt'
 
 artist_search = text_file(input_file,output_file,"search")
 artist_display = text_file(input_file,output_file,"display")
 
-
-while True:
-    token = token_cache.get_token()
-    term = artist_search.pop()
-    process_artist(token, term)
-    time.sleep(1)
+def similar_artists():
+    while True:
+        token = token_cache.get_token()
+        term = artist_search.pop()
+        process_artist(token, term)
+        time.sleep(1)

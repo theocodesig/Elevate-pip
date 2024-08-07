@@ -50,7 +50,7 @@ def get_album_upc(album_id, token):
         logging.error("Failed to retrieve album details: %s", result.content)
         return None
 
-def search_spotify(token, query, search_type, limit=5):
+def search_spotify(token, query,disp_term,search_type, limit=5):
     url = "https://api.spotify.com/v1/search"
     headers = {"Authorization": f"Bearer {token}"}
     query_params = {
@@ -58,7 +58,7 @@ def search_spotify(token, query, search_type, limit=5):
         "type": search_type,    
         "limit": limit
     }
-    disp_name=raw_list.pop()
+    
     result = get(url, headers=headers, params=query_params)
     
     if result.status_code == 200:
@@ -81,7 +81,7 @@ def search_spotify(token, query, search_type, limit=5):
                 track_id = item["id"]
                 
                 
-                data_to_insert = [(disp_name, idx, item['name'], isrc, track_id, artists, album_name, release_date, popularity)]
+                data_to_insert = [(disp_term, idx, item['name'], isrc, track_id, artists, album_name, release_date, popularity)]
                 add_to_db(data_to_insert, search_type)
                 save_to_csv(data_to_insert,search_type)
 
@@ -109,7 +109,7 @@ def search_spotify(token, query, search_type, limit=5):
                 upc = item.get("external_ids", {}).get("upc") if "external_ids" in item else None
                 album_id = item["id"]
                 upc = get_album_upc(album_id, token)
-                data_to_insert = [(disp_name, idx, item['name'], upc, album_id, artists, total_tracks)]
+                data_to_insert = [(disp_term, idx, item['name'], upc, album_id, artists, total_tracks)]
            
            
                 add_to_db(data_to_insert, search_type)
@@ -135,7 +135,7 @@ def search_spotify(token, query, search_type, limit=5):
                 followers = item["followers"]["total"] if "followers" in item else "Unknown"
                 popularity = item["popularity"] if "popularity" in item else "Unknown"
                 artist_id = item["id"]
-                data_to_insert = [(disp_name, idx, item['name'], artist_id, genres, followers, popularity)]
+                data_to_insert = [(disp_term, idx, item['name'], artist_id, genres, followers, popularity)]
             
             
                 add_to_db(data_to_insert, search_type)
@@ -167,18 +167,15 @@ lines_list = text_file(input_file, output_file,"search")
 raw_list = text_file(input_file, output_file,"display")
 
 
-
-def search_all_types(token, term):
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        executor.submit(search_spotify, token, term, "track")
-        executor.submit(search_spotify, token, term, "artist")
-        executor.submit(search_spotify, token, term, "album")
-
-while True:
-    token = token_cache.get_token()
-    if lines_list:
-        term = lines_list.pop()
-        search_all_types(token, term)
-        time.sleep(5)
-    else:
-        break
+def multiSearch():
+    while True:
+        token = token_cache.get_token()
+        if lines_list:
+            term = lines_list.pop()
+            disp_term = raw_list.pop()
+            search_spotify (token, term,disp_term, "track")
+            search_spotify( token, term,disp_term, "artist")
+            search_spotify( token, term,disp_term, "album")
+            time.sleep(5)
+        else:
+            break

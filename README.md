@@ -5,30 +5,30 @@
 
 # search.py examples:
   -input.txt: future
-  -csv output:
-    track.csv:
-      #term // ranks // name // ISRC // ID // artist // album // release_date // popularity
-      future,1,Throw Away,USSM11913507,2ML7vSeIZEmOCOiLUmz7Sv,Future,Monster,2014-10-28,67
-      future,2,Like That,USSM12402041,2tudvzsrR56uom6smgOcSf,"Future, Metro Boomin, Kendrick Lamar",WE DON'T TRUST YOU,2024-03-22,89
-      future,3,Low Life (feat. The Weeknd),USSM11600557,7EiZI6JVHllARrX9PUvAdX,"Future, The Weeknd",EVOL,2016-04-13,77
-      future,4,Type Shit,USSM12402033,28drn6tQo95MRvO0jQEo5C,"Future, Metro Boomin, Travis Scott, Playboi Carti",WE DON'T TRUST YOU,2024-03-22,87
-      future,5,Solo,USSM11701733,4lH6nENd1y81jp7Yt9lTBX,Future,HNDRXX,2017-07-27,80
-
-    album.csv:
-      #term // ranks // name // upc // id // artist // Total_Tracks
-      future,1,WE DON'T TRUST YOU,196871937382,4iqbFIdGOTzXeDtt9owjQn,"Future, Metro Boomin",17
-      future,2,Future Nostalgia,190295252960,7fJJK56U9fHixgO0HQkhtI,Dua Lipa,11
-      future,3,DS2 (Deluxe),886445398274,0fUy6IdLHDpGNwavIlhEsl,Future,19
-      future,4,FUTURE,886446597102,17FBoXK1NU2rvJBbzdzw0r,Future,20
-      future,5,WE STILL DON'T TRUST YOU,196871990844,3bSNhnaQQXpC639OQ4pMyP,"Future, Metro Boomin",25
-
-    artist.csv:
-      #term // ranks // name // id // genres // followers // popularity
-      future,1,Future,1RyvyyTE3xzB2ZywiAwp0i,"atl hip hop, hip hop, rap, southern hip hop, trap",17861614,91
-      future,2,Future Islands,1WvvwcQx0tj6NdDhZZ2zZz,"alternative dance, art pop, baltimore indie, chamber pop, indie rock, indietronica, neo-synthpop, shimmerpop",615220,60
-      future,3,Metro Boomin,0iEtIxbK0KxaSlF7G42ZOp,rap,8809110,89
-      future,4,Futurebirds,4Ait1vX2ZaWPrkua8Z664O,athens indie,58673,45
-      future,5,Drake,3TVXtAsR1Inumwj472S9r4,"canadian hip hop, canadian pop, hip hop, pop rap, rap",90089346,94
+    -csv output:
+      track.csv:
+        #term // ranks // name // ISRC // ID // artist // album // release_date // popularity
+        future,1,Throw Away,USSM11913507,2ML7vSeIZEmOCOiLUmz7Sv,Future,Monster,2014-10-28,67
+        future,2,Like That,USSM12402041,2tudvzsrR56uom6smgOcSf,"Future, Metro Boomin, Kendrick Lamar",WE DON'T TRUST YOU,2024-03-22,89
+        future,3,Low Life (feat. The Weeknd),USSM11600557,7EiZI6JVHllARrX9PUvAdX,"Future, The Weeknd",EVOL,2016-04-13,77
+        future,4,Type Shit,USSM12402033,28drn6tQo95MRvO0jQEo5C,"Future, Metro Boomin, Travis Scott, Playboi Carti",WE DON'T TRUST YOU,2024-03-22,87
+        future,5,Solo,USSM11701733,4lH6nENd1y81jp7Yt9lTBX,Future,HNDRXX,2017-07-27,80
+  
+      album.csv:
+        #term // ranks // name // upc // id // artist // Total_Tracks
+        future,1,WE DON'T TRUST YOU,196871937382,4iqbFIdGOTzXeDtt9owjQn,"Future, Metro Boomin",17
+        future,2,Future Nostalgia,190295252960,7fJJK56U9fHixgO0HQkhtI,Dua Lipa,11
+        future,3,DS2 (Deluxe),886445398274,0fUy6IdLHDpGNwavIlhEsl,Future,19
+        future,4,FUTURE,886446597102,17FBoXK1NU2rvJBbzdzw0r,Future,20
+        future,5,WE STILL DON'T TRUST YOU,196871990844,3bSNhnaQQXpC639OQ4pMyP,"Future, Metro Boomin",25
+  
+      artist.csv:
+        #term // ranks // name // id // genres // followers // popularity
+        future,1,Future,1RyvyyTE3xzB2ZywiAwp0i,"atl hip hop, hip hop, rap, southern hip hop, trap",17861614,91
+        future,2,Future Islands,1WvvwcQx0tj6NdDhZZ2zZz,"alternative dance, art pop, baltimore indie, chamber pop, indie rock, indietronica, neo-synthpop, shimmerpop",615220,60
+        future,3,Metro Boomin,0iEtIxbK0KxaSlF7G42ZOp,rap,8809110,89
+        future,4,Futurebirds,4Ait1vX2ZaWPrkua8Z664O,athens indie,58673,45
+        future,5,Drake,3TVXtAsR1Inumwj472S9r4,"canadian hip hop, canadian pop, hip hop, pop rap, rap",90089346,94
 
     -DB output:
         mysql> select * from artist;

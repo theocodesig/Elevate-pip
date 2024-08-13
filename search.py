@@ -109,9 +109,9 @@ def search_spotify(token, query,disp_term,search_type, limit=5):
                 upc = item.get("external_ids", {}).get("upc") if "external_ids" in item else None
                 album_id = item["id"]
                 upc = get_album_upc(album_id, token)
+                
+                
                 data_to_insert = [(disp_term, idx, item['name'], upc, album_id, artists, total_tracks)]
-           
-           
                 add_to_db(data_to_insert, search_type)
                 save_to_csv(data_to_insert,search_type)
 
@@ -135,9 +135,9 @@ def search_spotify(token, query,disp_term,search_type, limit=5):
                 followers = item["followers"]["total"] if "followers" in item else "Unknown"
                 popularity = item["popularity"] if "popularity" in item else "Unknown"
                 artist_id = item["id"]
+                
+                
                 data_to_insert = [(disp_term, idx, item['name'], artist_id, genres, followers, popularity)]
-            
-            
                 add_to_db(data_to_insert, search_type)
                 save_to_csv(data_to_insert,search_type)
 

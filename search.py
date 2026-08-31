@@ -1,181 +1,141 @@
-from Helper_file import TokenCache,add_to_db,text_file
-import threading
-import time
-from concurrent.futures import ThreadPoolExecutor
+"""Spotify search normalization and CSV export."""
+
+from __future__ import annotations
+
 import csv
-import logging
-from requests import get
+from pathlib import Path
+import re
+from typing import Any, Mapping, Sequence
 
-def save_to_csv(data_to_insert, type):
-    filename = f"{type}_data.csv"
-    header = []
+from Helper_file import DatabaseWriter, SpotifyClient, join_artist_names
 
-    if type == 'album':
-        header = ['term', 'ranks', 'name', 'upc', 'id', 'artist', 'Total_Tracks']
-    elif type == 'artist':
-        header = ['term', 'ranks', 'name', 'id', 'genres', 'followers', 'popularity']
-    elif type == 'track':
-        header = ['term', 'ranks', 'name', 'isrc', 'id', 'artist', 'album', 'release_date', 'popularity']
 
-    # Check if the file exists and has data
-    file_exists = False
-    try:
-        with open(filename, 'r') as file:
-            reader = csv.reader(file)
-            if next(reader, None):
-                file_exists = True
-    except FileNotFoundError:
-        pass
+HEADERS = {
+    "album": ["term", "ranks", "name", "upc", "id", "artist", "Total_Tracks"],
+    "artist": ["term", "ranks", "name", "id", "genres", "followers", "popularity"],
+    "track": [
+        "term",
+        "ranks",
+        "name",
+        "isrc",
+        "id",
+        "artist",
+        "album",
+        "release_date",
+        "popularity",
+    ],
+    "similar": ["artist", "artist_id", "ranks", "similar_a", "sim_ID"],
+}
 
-    with open(filename, 'a', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        if not file_exists:
+_FORMULA_PREFIX = re.compile(r"^\s*[=+\-@]")
+
+
+def spreadsheet_safe(value: Any) -> Any:
+    """Neutralize formula-like strings before writing untrusted API data to CSV."""
+
+    if isinstance(value, str) and _FORMULA_PREFIX.match(value):
+        return "'" + value
+    return value
+
+
+def append_csv(
+    output_dir: Path, resource_type: str, rows: Sequence[Sequence[Any]]
+) -> Path:
+    header = HEADERS.get(resource_type)
+    if header is None:
+        raise ValueError(f"Unsupported CSV resource type: {resource_type}")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / f"{resource_type}_data.csv"
+    write_header = not path.exists() or path.stat().st_size == 0
+    with path.open("a", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        if write_header:
             writer.writerow(header)
-        writer.writerows(data_to_insert)
-
-input_file = 'input.txt'
-output_file = 'output.txt'
-
-def get_album_upc(album_id, token):
-    url = f"https://api.spotify.com/v1/albums/{album_id}"
-    headers = {"Authorization": f"Bearer {token}"}
-
-    result = get(url, headers=headers)
-    
-    if result.status_code == 200:
-        album_info = result.json()
-        upc = album_info.get("external_ids", {}).get("upc")
-        return upc
-    else:
-        logging.error("Failed to retrieve album details: %s", result.content)
-        return None
-
-def search_spotify(token, query,disp_term,search_type, limit=5):
-    url = "https://api.spotify.com/v1/search"
-    headers = {"Authorization": f"Bearer {token}"}
-    query_params = {
-        "q": query,
-        "type": search_type,    
-        "limit": limit
-    }
-    
-    result = get(url, headers=headers, params=query_params)
-    
-    if result.status_code == 200:
-        
-        json_result = result.json()
-        
-        if search_type == "track":
-            
-            items = json_result.get("tracks", {}).get("items", [])
-            
-            for idx, item in enumerate(items, start=1):
-                
-                
-                artists = ', '.join([artist["name"] for artist in item["artists"]])
-                album_name = item["album"]["name"]
-                release_date = item["album"]["release_date"]
-                popularity = item["popularity"]
-                preview_url = item["preview_url"]
-                isrc = item.get("external_ids", {}).get("isrc") if item.get("external_ids") else None
-                track_id = item["id"]
-                
-                
-                data_to_insert = [(disp_term, idx, item['name'], isrc, track_id, artists, album_name, release_date, popularity)]
-                add_to_db(data_to_insert, search_type)
-                save_to_csv(data_to_insert,search_type)
+        writer.writerows(
+            [[spreadsheet_safe(value) for value in row] for row in rows]
+        )
+    return path
 
 
-                print(f"Track {idx}: {item['name']}")
-                print(f"Artists: {artists}")
-                print(f"Album: {album_name}")
-                print(f"Release Date: {release_date}")
-                print(f"Popularity: {popularity}")
-                print(f"Preview URL: {preview_url}")
-                print(f"Track ID: {track_id}")
-                if isrc:
-                    print(f"ISRC: {isrc}")
-                print()
-
-        elif search_type == "album":
-           
-            items = json_result.get("albums", {}).get("items", [])
-           
-            for idx, item in enumerate(items, start=1):
-           
-                artists = ', '.join([artist["name"] for artist in item["artists"]])
-                release_date = item["release_date"]
-                total_tracks = item["total_tracks"]
-                upc = item.get("external_ids", {}).get("upc") if "external_ids" in item else None
-                album_id = item["id"]
-                upc = get_album_upc(album_id, token)
-                
-                
-                data_to_insert = [(disp_term, idx, item['name'], upc, album_id, artists, total_tracks)]
-                add_to_db(data_to_insert, search_type)
-                save_to_csv(data_to_insert,search_type)
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
 
 
-                print(f"Album {idx}: {item['name']}")
-                print(f"Album ID: {album_id}")
-                print(f"Artists: {artists}")
-                print(f"Release Date: {release_date}")
-                print(f"Total Tracks: {total_tracks}")
-                if upc:
-                    print(f"UPC: {upc}")
-                print()
-
-        elif search_type == "artist":
-            
-            items = json_result.get("artists", {}).get("items", [])
-            
-            for idx, item in enumerate(items, start=1):
-            
-                genres = ', '.join(item.get("genres", [])) if item.get("genres") else "Unknown"
-                followers = item["followers"]["total"] if "followers" in item else "Unknown"
-                popularity = item["popularity"] if "popularity" in item else "Unknown"
-                artist_id = item["id"]
-                
-                
-                data_to_insert = [(disp_term, idx, item['name'], artist_id, genres, followers, popularity)]
-                add_to_db(data_to_insert, search_type)
-                save_to_csv(data_to_insert,search_type)
-
-                print(f"Artist {idx}: {item['name']}")
-                print(f"Genres: {genres}")
-                print(f"Artist Id: {artist_id}")
-                print(f"Followers: {followers}")
-                print(f"Popularity: {popularity}")
-                print()
-
-    else:
-        logging.error("Search failed: %s", result.content)
-
-
-token_cache = TokenCache(ttl=3600)
-
-def refresh_token_periodically():
-    while True:
-        token_cache.get_token()
-        time.sleep(3600)
-
-threading.Thread(target=refresh_token_periodically, daemon=True).start()
-
-
-
-lines_list = text_file(input_file, output_file,"search")
-raw_list = text_file(input_file, output_file,"display")
-
-
-def multiSearch():
-    while True:
-        token = token_cache.get_token()
-        if lines_list:
-            term = lines_list.pop()
-            disp_term = raw_list.pop()
-            search_spotify (token, term,disp_term, "track")
-            search_spotify( token, term,disp_term, "artist")
-            search_spotify( token, term,disp_term, "album")
-            time.sleep(5)
+def normalize_search_rows(
+    client: SpotifyClient,
+    term: str,
+    resource_type: str,
+    items: Sequence[Mapping[str, Any]],
+) -> list[tuple[Any, ...]]:
+    rows: list[tuple[Any, ...]] = []
+    for rank, item in enumerate(items, start=1):
+        if resource_type == "track":
+            album = _mapping(item.get("album"))
+            external_ids = _mapping(item.get("external_ids"))
+            rows.append(
+                (
+                    term,
+                    rank,
+                    item.get("name", ""),
+                    external_ids.get("isrc"),
+                    item.get("id", ""),
+                    join_artist_names(item.get("artists", [])),
+                    album.get("name", ""),
+                    album.get("release_date", ""),
+                    item.get("popularity"),
+                )
+            )
+        elif resource_type == "artist":
+            followers = _mapping(item.get("followers"))
+            genres = item.get("genres", [])
+            rows.append(
+                (
+                    term,
+                    rank,
+                    item.get("name", ""),
+                    item.get("id", ""),
+                    ", ".join(str(value) for value in genres)
+                    if isinstance(genres, list)
+                    else "",
+                    followers.get("total"),
+                    item.get("popularity"),
+                )
+            )
+        elif resource_type == "album":
+            album_id = str(item.get("id", ""))
+            upc = client.album_upc(album_id) if album_id else None
+            rows.append(
+                (
+                    term,
+                    rank,
+                    item.get("name", ""),
+                    upc,
+                    album_id,
+                    join_artist_names(item.get("artists", [])),
+                    item.get("total_tracks"),
+                )
+            )
         else:
-            break
+            raise ValueError(f"Unsupported Spotify resource type: {resource_type}")
+    return rows
+
+
+def run_searches(
+    client: SpotifyClient,
+    terms: Sequence[str],
+    output_dir: Path,
+    *,
+    database: DatabaseWriter | None = None,
+    limit: int = 5,
+) -> dict[str, int]:
+    totals = {"track": 0, "artist": 0, "album": 0}
+    for term in terms:
+        for resource_type in totals:
+            items = client.search(term, resource_type, limit=limit)
+            rows = normalize_search_rows(client, term, resource_type, items)
+            append_csv(output_dir, resource_type, rows)
+            if database is not None:
+                database.write(resource_type, rows)
+            totals[resource_type] += len(rows)
+    return totals
